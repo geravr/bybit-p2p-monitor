@@ -1,28 +1,36 @@
 {
-  "name": "app",
+  "name": "bybit-p2p-monitor",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "bun --watch src/index.ts",
+    "worker": "bun src/monitors/worker.ts",
     "deploy": "wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:clean": "docker-compose down -v",
-    "db:push": "drizzle-kit push",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:push": "bun drizzle-kit push",
+    "db:generate": "bun drizzle-kit generate",
+    "db:migrate": "bun drizzle-kit migrate",
+    "db:studio": "bun drizzle-kit studio",
+    "lint": "bun lint",
+    "test": "bun test",
+    "typecheck": "bun run --bun tsc --noEmit"
   },
   "dependencies": {
     "better-auth": "^1.2.7",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.43.0",
     "hono": "^4.7.7",
-    "pg": "^8.15.5"
+    "pg": "^8.15.5",
+    "bybit-api": "^latest",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@types/pg": "^8.11.14",
+    "@types/node": "^22.15.21",
     "drizzle-kit": "^0.31.0",
     "tsx": "^4.19.3",
-    "wrangler": "^4.4.0"
+    "wrangler": "^4.4.0",
+    "typescript": "^5.8.3"
   }
 }

@@ -1,115 +1,146 @@
-# Better-Hono
+# BYBIT P2P MONITOR
 
-### Hono + Better-Auth + Drizzle + Cloudflare Workers
+## 🚀 Sistema de Monitoreo de Precios P2P de Bybit
 
-A minimal template to kickstart projects with:
+Monitor en tiempo real de anuncios P2P (buy/sell) de Bybit, guardando historial de precios para análisis.
 
-- **Hono** – Fast web framework
-- **Better Auth** – Authentication system
-- **Drizzle ORM** – Database management
-- **Cloudflare Workers** – Edge deployment
-- **Bun** – Fast JavaScript runtime
-- **Docker** – Local database development
+## 🏗️ Arquitectura
 
-Clean setup for authentication, database, and deployment.
+- **Runtime:** 🍎 Bun (10x más rápido)
+- **Framework:** ⚡ Hono (Edge-ready)
+- **ORM:** 🐉 Drizzle (Type-safe)
+- **DB:** PostgreSQL
+- **API:** Bybit P2P Open API
 
+## 📦 Installation
 
-## Getting Started
-
-1. **Clone the repository:**
-
+1. **Clonar repositorio:**
 ```bash
-git clone https://github.com/alwaysnomads/better-hono.git
-cd better-hono
+git clone https://github.com/geravr/bybit-p2p-monitor.git
+cd bybit-p2p-monitor
 ```
 
-2. **Install dependencies:**
-
+2. **Instalar dependencias:**
 ```bash
 bun install
 ```
 
-3. **Setup your environment:**
-
+3. **Configurar variables de entorno:**
 ```bash
-# Copy the example environment file into .env and .dev.vars
-cp .env.example .env .dev.vars
+cp .env.example .env
+# Editar .env con:
+# - BYBIT_API_KEY
+# - BYBIT_API_SECRET  
+# - DATABASE_URL
 ```
 
-- **.env**: Used by your application (e.g., in Drizzle).
-- **.dev.vars**: Used by Wrangler when running the local server.
-
-> Edit both files with your environment variables.
-
-4. **Start the database (if needed):**
-
+4. **Levantar PostgreSQL:**
 ```bash
-# Start the local Postgres database with Docker
 bun run docker:up
 ```
 
-> Or connect to a cloud database like [Neon](https://neon.tech/).  
-> Make sure your `.env` and `.dev.vars` point to the correct database URL.
-
-5. **Push database schema and generate types:**
-
+5. **Ejecutar migraciones:**
 ```bash
 bun run db:push
-bun run db:generate
 ```
 
-6. **Start the development server:**
+## 🏃 Ejecución
+
+### Worker de Monitoreo (Recomendado)
+```bash
+# Ejecutar en desarrollo
+bun run worker
+
+# Cada 5 minutos por defecto (configurable en .env)
+```
+
+### Desarrollo
+```bash
+bun run dev  # Hono server + worker automático
+```
+
+## 📊 Qué hace el sistema
+
+1. Cada X minutos (configurable):
+   - Fetch anuncios online de Bybit (USDT/MXN)
+   - Comparar con DB existente
+   - Guardar nuevos merchants/ads
+   - Detectar cambios de precio > 0.1%
+   - Loggear cambios en `price_logs`
+
+2. Datos guardados:
+   - Merchants (nickname, country, trades, rate)
+   - Ads (asset, fiat, price, min/max, payment methods)
+   - Price history (por cada ad)
+   - Orders completados (futuro)
+
+## 🔑 Endpoint Bybit P2P
+
+Base URL:
+- Mainnet: `https://api.bybit.com`
+- Testnet: `https://api-testnet.bybit.com`
+
+Endpoints usamos:
+- `GET /v5/p2p/item/online` - Listar ads públicos
+- `GET /v5/p2p/item/personal/list` - Listar mis ads
+- `GET /v5/p2p/order/simplifyList` - Listar órdenes
+
+## 🗄️ Bases de Datos
+
+### Tablas:
+
+- `merchants` - Info de traders P2P
+- `ads` - Anuncios activos
+- `price_logs` - Historial de precios
+- `orders` - Órdenes transadas
+
+## 📈 Próximas Features
+
+- [x] Fetch de ads por asset/fiat
+- [x] Detección de cambios de precio
+- [ ] API REST para consultar datos
+- [ ] Alerts Telegram para precios bajos
+- [ ] Dashboard analytics
+- [ ] Soporte para más pares (BTC, ETH, USDC)
+
+## 🛠️ Scripts Disponibles
 
 ```bash
-bun run dev
+bun run dev          # Dev server
+bun run worker       # Worker manual
+bun run db:push      # Push migrations
+bun run db:generate  # Generate types
+bun run db:studio    # DB UI
+bun run db:migrate   # Run migrations
+bun run docker:up    # Start Postgres
+bun run docker:down  # Stop Postgres
 ```
 
-> The development server runs on port **3000** by default for easier integration with Better-Auth, you can change it at the wrangler.jsonc file.
-> OpenAPI documentation for Better-Auth is available at [http://localhost:3000/api/auth/reference](http://localhost:3000/api/auth/reference).  
-> You can remove the OpenAPI plugin if not needed by editing `src/lib/auth.ts`.
+## 🐛 Troubleshooting
 
+### Error de firma API
+- Verificar API key/secret correctos
+- Checkear timestamp
+- Usar testnet para pruebas
 
-## Thanks to w3cj!
+### Error de conexión DB
+- Asegurar Docker corriendo
+- Verificar DATABASE_URL
+- Ejecutar `bun run db:up`
 
-This template is heavily inspired by [w3cj's hono-open-api-starter](https://github.com/w3cj/hono-open-api-starter), even using parts of their code. Make sure to check out their repository!
+## 🔒 Seguridad
 
+- Nunca subir `.env` a git
+- Usar tokens de testnet primero
+- Rotar API keys periódicamente
+- Implementar rate limiting en production
 
-## Available Commands
+## 📝 Licencia
 
-| Command               | Description                          |
-| --------------------- | ------------------------------------ |
-| `bun run dev`          | Start local server (Wrangler)        |
-| `bun run deploy`       | Deploy to Cloudflare                 |
-| `bun run cf-typegen`   | Generate Cloudflare types            |
-| `bun run docker:up`    | Start Docker containers              |
-| `bun run docker:down`  | Stop Docker containers               |
-| `bun run docker:clean` | Stop and remove containers + volumes |
-| `bun run db:push`      | Push schema to database              |
-| `bun run db:generate`  | Generate Drizzle ORM types           |
-| `bun run db:migrate`   | Run database migrations              |
-| `bun run db:studio`    | Open Drizzle Studio GUI              |
-
-## Configure template
-
-### Adding New Bindings
-
-To add Cloudflare bindings (e.g., R2 buckets, KV stores), update the bindings types at `src/lib/types.ts`
-
-
-### Configure Auth
-
-This template comes with Google social login preconfigured for example purposes.  
-You can easily change or extend it in `src/lib/auth.ts`.
-
-
-## License
-
-Released under the [MIT License](LICENSE).
+MIT License - ver LICENSE file
 
 ---
 
-✅ Built with **Bun**  
-✅ Powered by **Cloudflare Workers**  
-✅ Local database ready with **Docker**
-
-
+**Version:** 1.0.0  
+**Created:** 2026-03-14  
+**Maintainer:** @geravr
