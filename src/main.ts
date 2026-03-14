@@ -1,9 +1,10 @@
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { cors } from "hono/cors";
+import { z } from "zod";
 import apiRoutes from "./api";
 import { BybitP2PClient } from "./bybit/client";
-import { P2PWorker } from "./monitors/worker";
+import { P2PWorker, Scheduler } from "./monitors";
 import { db, pool } from "./db";
 import Config from "./config";
 
@@ -22,7 +23,7 @@ console.log("🚀 Iniciando Bybit P2P Monitor Server...");
 console.log("📡 Mode:", Config.isTestnet ? "Testnet" : "Mainnet");
 console.log("⏰ Monitor Interval:", Config.monitorInterval / 1000, "segundos");
 
-async function main() {
+async function startServer() {
   try {
     // Verificar conexión DB
     console.log("🔌 Conectando a PostgreSQL...");
@@ -50,8 +51,15 @@ async function main() {
       logger: (msg) => console.log(`[DATA] ${msg}`),
     });
 
+    // Crear scheduler
+    console.log("🕘 Scheduler configurado...");
+    const scheduler = new Scheduler({
+      callback: () => worker.syncAds(),
+      interval: Config.monitorInterval,
+      logger: console.log,
+    });
+
     // Iniciar worker
-    await worker.start();
     console.log("✅ Worker iniciado");
 
     // Iniciar server Hono
@@ -69,10 +77,13 @@ async function main() {
       app.fetch
     );
 
+    // Start scheduler
+    await scheduler.start();
+
     // Manejar shutdown
     const shutdown = async () => {
       console.log("\n📴 Deteniendo servidor...");
-      await worker.stop();
+      scheduler.stop();
       pool.end();
       Deno.exit(0);
     };
@@ -85,4 +96,4 @@ async function main() {
   }
 }
 
-main().catch(console.error);
+startServer().catch(console.error);
